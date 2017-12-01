@@ -6,8 +6,13 @@
 #define CrawlerTag
 typedef struct CrawlerTag {
 
+  char * searchTerm;
   char * url;
   char ** parsedUrls;
+
+  int * write;
+  void * getContent;
+  char * ** parse;
 
 } Crawler;
 
@@ -15,7 +20,8 @@ typedef struct CrawlerTag {
 // 0 = failure
 int write(char ** content);
 
-void duplicate(char ** state);
+// get the website content with libcurl
+void getContent(char * url);
 
 // return an array of links
 // take page content in HTML
