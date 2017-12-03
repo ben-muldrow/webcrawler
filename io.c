@@ -4,16 +4,8 @@
  */
 #include <stdio.h>
 
+#define OUTPUT_PATH "output/out.txt"
 
-int main(){
-  printf("Word\n" );
-  char path[32] = "output/out.txt";
-  char url[32] = "http://www.google.com/";
-
-  openFileAndWrite(path, url);
-
-
-}
 // openFileAndWrite opens a file based on a path string passed in
 // and writes the url which has a match to the search term to the
 // file.
