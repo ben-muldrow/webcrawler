@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <curl/curl.h>
 
-#include "crawler.h" // include Crawler struct
-
-#define DEBUG 1
+#include "crawler.c" // includer Crawler function implementations
 
 // define default values
 char * searchTerm = "Ben";
@@ -12,7 +11,7 @@ int depth = 5;
 
 int main( int argc, char ** argv ) {
 
-  if (DEBUG) printf("Started...\n");
+  printf("Started...\n");
 
   // define search term as first arg
   // if no search term is defined look up Ben
@@ -21,10 +20,16 @@ int main( int argc, char ** argv ) {
   }
 
   // define Crawler from struct
-  Crawler myCrawler;
-  myCrawler.searchTerm = searchTerm;
-  myCrawler.url = "http://cofc.edu/";
+  Crawler myCrawler = {
+    searchTerm,
+    "http://cofc.edu",
+    NULL,
+    NULL
+  };
 
-  printf("crawling %s\n", myCrawler.url);
+
+
+
+  getContent(myCrawler.url, myCrawler.searchTerm);
 
 }

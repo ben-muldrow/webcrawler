@@ -2,6 +2,10 @@
 // A web crawler will be able to:
 // - write to the output
 // - crawl down one layer
+#include <tidy/tidy.h>
+#include <tidy/buffio.h>
+
+#define BUFFER_SIZE 2048;
 
 #define CrawlerTag
 typedef struct CrawlerTag {
@@ -11,10 +15,6 @@ typedef struct CrawlerTag {
   char ** parsedUrls;
   char ** pastUrls;
 
-  int * write;
-  void * getContent;
-  char * ** parse;
-
 } Crawler;
 
 // 1 = success
@@ -22,8 +22,8 @@ typedef struct CrawlerTag {
 int write(char ** content);
 
 // get the website content with libcurl
-void getContent(char * url);
+int getContent(char * url, char * content);
 
 // return an array of links
 // take page content in HTML
-char ** parse(char * content);
+char ** parse(TidyDoc parseDoc, TidyNode node);
