@@ -9,6 +9,7 @@ typedef struct CrawlerTag {
   char * searchTerm;
   char * url;
   char ** parsedUrls;
+  char ** pastUrls;
 
   int * write;
   void * getContent;
