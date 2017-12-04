@@ -26,4 +26,4 @@ int getContent(char * url, char * content);
 
 // return an array of links
 // take page content in HTML
-char ** parse(TidyDoc parseDoc, TidyNode node);
+void parse(TidyNode ndoe);
