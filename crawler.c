@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <curl/curl.h>
 #include <tidy/tidy.h>
 #include <tidy/buffio.h>
@@ -9,9 +10,8 @@
 #define MAX_LINKS 10
 
 // init vars
-TidyDoc parseDoc;
-TidyBuffer tidyBuffer;
 ctmbstr href = "href";
+ctmbstr a = "a";
 
 // this function is used to write website contents to an output buffer
 // built from bufferStruct
@@ -19,12 +19,11 @@ size_t bufferCallback(
   char * buffer,
   size_t size,
   size_t nmemb,
-  TidyBuffer * tidyBuffer){
+  TidyBuffer * tidyBuffer) {
 
     // append response to the tidyBuffer
     size_t newSize = size * nmemb;
     tidyBufAppend(tidyBuffer, buffer, newSize);
-    printf("hmm %zu\n", newSize);
 
     // return size of response
     return newSize;
@@ -40,70 +39,56 @@ int write(char ** output) {
 }
 
 // parse website content in Tidy form
-char ** parse(TidyDoc parseDoc, TidyNode node) {
-
-  printf("parsing...\n");
-
-  ctmbstr * output = (ctmbstr *) malloc(sizeof(ctmbstr) * MAX_LINKS);
-  int i = 0; // index in output array
+void parse(TidyNode node) {
 
   TidyNode child;
-  child = tidyGetChild(node);
 
-  printf("mallocced \n");
-  printf("name: %s\n", tidyNodeGetName(node));
+  // for each child, recursively parse all of their children
+  for (child = tidyGetChild(node); child != NULL; child = tidyGetNext(child)) {
 
-  while (child != NULL) { // for each node in the Tidy Doc
-    if (tidyNodeGetName(node)) { // if the node is valid
-
-      // check for href attribute
-      TidyAttr attr;
-      attr = tidyAttrFirst(child);
-      while (attr) {
-        if (tidyAttrName(attr) == href) {
-          printf("found one\n");
-          output[i] = tidyAttrValue(attr); // if found, put in output array
-          i++;
-        }
-        attr = tidyAttrNext(attr);
-      }
-
+    // if href exists, output it
+    TidyAttr hrefAttr = tidyAttrGetById(child, TidyAttr_HREF);
+    if (hrefAttr) {
+      // TODO output to struct var
+      printf("url found: %s\n", tidyAttrValue(hrefAttr));
     }
-    child = tidyGetNext(child);
+
+    // recursive call for tree traversing
+    parse(child);
   }
 
-  return output;
 }
 
 // get content of a website and store it in a buffer
 int getContent(char * url, char * searchTerm) {
 
-  printf("getting content\n");
-
   // if crawler exists
-  if (url && searchTerm) {
+  if (url) {
 
     // intitialize cURL vars
     CURL *handle;
-    CURLcode res;
     handle = curl_easy_init();
+    char errBuff[CURL_ERROR_SIZE];
+    int res;
+    TidyDoc parseDoc;
+    TidyBuffer tidyBuffer = {0};
+    TidyBuffer tidyErrBuff = {0};
 
     // if initialized correctly
     if (handle) {
 
-      // set up Tidy Buffer and Tidy Doc
-      tidyBufInit(&tidyBuffer);
-      parseDoc = tidyCreate();
-      tidyOptSetInt(parseDoc, TidyWrapLen, 2048); // set max length
-
-      printf("tidy set mydude\n");
-
-      // set up and execute cURL
+      // set up cURL options
       curl_easy_setopt(handle, CURLOPT_URL, url); // set URL
       curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, bufferCallback); // set output callback function
-      curl_easy_setopt(handle, CURLOPT_WRITEDATA, &parseDoc); // identify struct containing buffer
+      curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errBuff);
 
-      printf("curl opt set\n");
+      // set up Tidy Buffer and Tidy Doc
+      parseDoc = tidyCreate();
+      tidyBufInit(&tidyBuffer);
+      tidyOptSetInt(parseDoc, TidyWrapLen, 2048); // set max length
+      tidyOptSetBool(parseDoc, TidyForceOutput, yes); // force output
+
+      curl_easy_setopt(handle, CURLOPT_WRITEDATA, &tidyBuffer); // identify buffer to store data in
 
       // execute request, return status code to res
       res = curl_easy_perform(handle);
@@ -111,24 +96,28 @@ int getContent(char * url, char * searchTerm) {
       // check success
       if (res == CURLE_OK) {
         printf("successful crawl of %s\n", url);
+
+        // parse webpage so it is readable by Tidy
         tidyParseBuffer(parseDoc, &tidyBuffer);
-        parse(parseDoc, tidyGetRoot(parseDoc)); // parse results
+
+        parse(tidyGetBody(parseDoc)); // parse results
       } else {
         printf("crawl failed for %s\n", url);
+        return 0; // failure
       }
 
       // clean up, close connections
       curl_easy_cleanup(handle);
       tidyBufFree(&tidyBuffer);
+      tidyBufFree(&tidyErrBuff);
       tidyRelease(parseDoc);
-
 
       return 1; // success
 
     }
+    return 0;
 
-  } else {
-    return 0; // failure
   }
+  return 0; // failure
 
 }

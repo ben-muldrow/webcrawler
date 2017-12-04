@@ -27,9 +27,7 @@ int main( int argc, char ** argv ) {
     NULL
   };
 
-
-
-
   getContent(myCrawler.url, myCrawler.searchTerm);
+  // crawl(myCrawler.url);
 
 }
