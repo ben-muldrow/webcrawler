@@ -22,10 +22,11 @@ int main( int argc, char ** argv ) {
   // define Crawler from struct
   Crawler myCrawler = {
     searchTerm,
-    "http://cofc.edu",
+    argv[1],
     (char **) malloc(MAX_LINKS * (sizeof(char *)))
   };
 
   getContent(myCrawler);
+  write(myCrawler.parsedUrls); // write first 10 Urls
 
 }

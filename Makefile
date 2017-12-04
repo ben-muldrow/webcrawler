@@ -15,7 +15,7 @@ clean:
 	/bin/rm -f main *.o *.gz
 
 run:
-	./main
+	./main http://cofc.edu
 
 tarball:
 	# put your tar command here

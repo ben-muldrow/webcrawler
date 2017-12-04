@@ -31,35 +31,36 @@ size_t bufferCallback(
 
 // output data to file
 int write(char ** output) {
-  char * data = output[0];
-  for (int i = 1; data; i ++) {
-    openFileAndWrite(OUTPUT_PATH, data);
-    data = output[i];
+  for (int i = 0; i < MAX_LINKS; i ++) {
+    if (output[i]) {
+      printf("writing %d: %s\n", i, output[i]);
+      openFileAndWrite(OUTPUT_PATH, output[i]);
+    }
   }
 }
 
 // parse website content in Tidy form
 void parse(TidyNode node, char ** output) {
-  if (currentIndex < 10) {
-    TidyNode child;
+  TidyNode child;
 
-    // for each child, recursively parse all of their children
-    for (child = tidyGetChild(node); child != NULL; child = tidyGetNext(child)) {
+  // for each child, recursively parse all of their children
+  for (child = tidyGetChild(node); child != NULL; child = tidyGetNext(child)) {
 
-      // if href exists, output it
-      TidyAttr hrefAttr = tidyAttrGetById(child, TidyAttr_HREF);
-      if (hrefAttr) {
-        // TODO output to struct var
+    // if href exists, output it
+    TidyAttr hrefAttr = tidyAttrGetById(child, TidyAttr_HREF);
+    if (hrefAttr) {
+      // TODO output to struct var
+      if (currentIndex < 10) {
         if (strlen(tidyAttrValue(hrefAttr)) < MAX_URL_LEN) {
           strcpy(output[currentIndex], tidyAttrValue(hrefAttr));
           currentIndex ++;
-          printf("index: %d\n", currentIndex);
         }
       }
-
-      // recursive call for tree traversing
-      parse(child, output);
+      if (tidyAttrValue(hrefAttr)) printf("Url found: %s\n", tidyAttrValue(hrefAttr));
     }
+
+    // recursive call for tree traversing
+    parse(child, output);
   }
 }
 
