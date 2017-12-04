@@ -8,10 +8,10 @@
 #include "io.c"
 
 #define MAX_LINKS 10
+#define MAX_URL_LEN 512
 
 // init vars
-ctmbstr href = "href";
-ctmbstr a = "a";
+int currentIndex = 0;
 
 // this function is used to write website contents to an output buffer
 // built from bufferStruct
@@ -39,31 +39,35 @@ int write(char ** output) {
 }
 
 // parse website content in Tidy form
-void parse(TidyNode node) {
+void parse(TidyNode node, char ** output) {
+  if (currentIndex < 10) {
+    TidyNode child;
 
-  TidyNode child;
+    // for each child, recursively parse all of their children
+    for (child = tidyGetChild(node); child != NULL; child = tidyGetNext(child)) {
 
-  // for each child, recursively parse all of their children
-  for (child = tidyGetChild(node); child != NULL; child = tidyGetNext(child)) {
+      // if href exists, output it
+      TidyAttr hrefAttr = tidyAttrGetById(child, TidyAttr_HREF);
+      if (hrefAttr) {
+        // TODO output to struct var
+        if (strlen(tidyAttrValue(hrefAttr)) < MAX_URL_LEN) {
+          strcpy(output[currentIndex], tidyAttrValue(hrefAttr));
+          currentIndex ++;
+          printf("index: %d\n", currentIndex);
+        }
+      }
 
-    // if href exists, output it
-    TidyAttr hrefAttr = tidyAttrGetById(child, TidyAttr_HREF);
-    if (hrefAttr) {
-      // TODO output to struct var
-      printf("url found: %s\n", tidyAttrValue(hrefAttr));
+      // recursive call for tree traversing
+      parse(child, output);
     }
-
-    // recursive call for tree traversing
-    parse(child);
   }
-
 }
 
 // get content of a website and store it in a buffer
-int getContent(char * url, char * searchTerm) {
+int getContent(Crawler crawler) {
 
   // if crawler exists
-  if (url) {
+  if (crawler.url) {
 
     // intitialize cURL vars
     CURL *handle;
@@ -78,7 +82,7 @@ int getContent(char * url, char * searchTerm) {
     if (handle) {
 
       // set up cURL options
-      curl_easy_setopt(handle, CURLOPT_URL, url); // set URL
+      curl_easy_setopt(handle, CURLOPT_URL, crawler.url); // set URL
       curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, bufferCallback); // set output callback function
       curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errBuff);
 
@@ -95,14 +99,19 @@ int getContent(char * url, char * searchTerm) {
 
       // check success
       if (res == CURLE_OK) {
-        printf("successful crawl of %s\n", url);
+        printf("successful crawl of %s\n", crawler.url);
 
         // parse webpage so it is readable by Tidy
         tidyParseBuffer(parseDoc, &tidyBuffer);
 
-        parse(tidyGetBody(parseDoc)); // parse results
+        // alloc output array
+        for (int i = 0; i < MAX_LINKS; i ++) {
+          crawler.parsedUrls[i] = (char *) malloc(MAX_URL_LEN * sizeof(char *));
+        }
+        parse(tidyGetBody(parseDoc), crawler.parsedUrls); // parse results
+        crawler.parsedUrls = crawler.parsedUrls;
       } else {
-        printf("crawl failed for %s\n", url);
+        printf("crawl failed for %s\n", crawler.url);
         return 0; // failure
       }
 
@@ -115,7 +124,7 @@ int getContent(char * url, char * searchTerm) {
       return 1; // success
 
     }
-    return 0;
+    return 0; // failure
 
   }
   return 0; // failure
