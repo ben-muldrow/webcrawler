@@ -31,10 +31,11 @@ size_t bufferCallback(
 
 // output data to file
 int write(char ** output) {
-  char * data = output[0];
-  for (int i = 1; data; i ++) {
-    openFileAndWrite(OUTPUT_PATH, data);
-    data = output[i];
+  for (int i = 0; i < MAX_LINKS; i ++) {
+    if (output[i]) {
+      printf("writing %d: %s\n", i, output[i]);
+      openFileAndWrite(OUTPUT_PATH, output[i]);
+    }
   }
 }
 
@@ -53,7 +54,6 @@ void parse(TidyNode node, char ** output) {
         if (strlen(tidyAttrValue(hrefAttr)) < MAX_URL_LEN) {
           strcpy(output[currentIndex], tidyAttrValue(hrefAttr));
           currentIndex ++;
-          printf("index: %d\n", currentIndex);
         }
       }
 
@@ -64,10 +64,12 @@ void parse(TidyNode node, char ** output) {
 }
 
 // get content of a website and store it in a buffer
-int getContent(Crawler crawler) {
+int getContent(Crawler * crawler) {
 
   // if crawler exists
-  if (crawler.url) {
+  if (crawler->url) {
+
+    printf("starting curl request for %s\n", crawler->url);
 
     // intitialize cURL vars
     CURL *handle;
@@ -82,7 +84,7 @@ int getContent(Crawler crawler) {
     if (handle) {
 
       // set up cURL options
-      curl_easy_setopt(handle, CURLOPT_URL, crawler.url); // set URL
+      curl_easy_setopt(handle, CURLOPT_URL, crawler->url); // set URL
       curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, bufferCallback); // set output callback function
       curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errBuff);
 
@@ -99,19 +101,14 @@ int getContent(Crawler crawler) {
 
       // check success
       if (res == CURLE_OK) {
-        printf("successful crawl of %s\n", crawler.url);
+        printf("successful crawl of %s\n", crawler->url);
 
         // parse webpage so it is readable by Tidy
         tidyParseBuffer(parseDoc, &tidyBuffer);
+        parse(tidyGetBody(parseDoc), crawler->parsedUrls); // parse results
 
-        // alloc output array
-        for (int i = 0; i < MAX_LINKS; i ++) {
-          crawler.parsedUrls[i] = (char *) malloc(MAX_URL_LEN * sizeof(char *));
-        }
-        parse(tidyGetBody(parseDoc), crawler.parsedUrls); // parse results
-        crawler.parsedUrls = crawler.parsedUrls;
       } else {
-        printf("crawl failed for %s\n", crawler.url);
+        printf("crawl failed for %s\n", crawler->url);
         return 0; // failure
       }
 

@@ -22,7 +22,7 @@ typedef struct CrawlerTag {
 int write(char ** content);
 
 // get the website content with libcurl
-int getContent(Crawler crawler);
+int getContent(Crawler * crawler);
 
 // return an array of links
 // take page content in HTML
