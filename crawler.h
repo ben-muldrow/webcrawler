@@ -7,13 +7,13 @@
 
 #define BUFFER_SIZE 2048;
 
+// define the Crawler struct that holds data about the web traversal
 #define CrawlerTag
 typedef struct CrawlerTag {
 
   char * searchTerm;
   char * url;
   char ** parsedUrls;
-  char ** pastUrls;
 
 } Crawler;
 
@@ -22,8 +22,8 @@ typedef struct CrawlerTag {
 int write(char ** content);
 
 // get the website content with libcurl
-int getContent(char * url, char * content);
+int getContent(Crawler crawler);
 
 // return an array of links
 // take page content in HTML
-void parse(TidyNode ndoe);
+void parse(TidyNode node, char ** output);

@@ -23,11 +23,9 @@ int main( int argc, char ** argv ) {
   Crawler myCrawler = {
     searchTerm,
     "http://cofc.edu",
-    NULL,
-    NULL
+    (char **) malloc(MAX_LINKS * (sizeof(char *)))
   };
 
-  getContent(myCrawler.url, myCrawler.searchTerm);
-  // crawl(myCrawler.url);
+  getContent(myCrawler);
 
 }
